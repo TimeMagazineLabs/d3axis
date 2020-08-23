@@ -1,0 +1,23 @@
+{
+  "name": "d3axis",
+  "version": "0.0.1",
+  "description": "A basic wrapper for d3-scale and d3-axis, mainly used as a dependency for our chart and slider",
+  "main": "axis.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TimeMagazineLabs/d3axis.git"
+  },
+  "keywords": [
+    "d3",
+    "axis"
+  ],
+  "author": "Chris Wilson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TimeMagazineLabs/d3axis/issues"
+  },
+  "homepage": "https://github.com/TimeMagazineLabs/d3axis#readme"
+}
