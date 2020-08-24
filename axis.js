@@ -1,177 +1,263 @@
+import { select, selectAll, event } from 'd3-selection';
 import { scaleLinear, scaleTime, scaleLog, scaleBand } from 'd3-scale'; 
 import { axisLeft, axisRight, axisBottom, axisTop } from 'd3-axis'; 
 import { transition } from 'd3-transition';
 
+require("./axis.scss");
+
 function d3axis(container, myOpts) {
-	let opts = {
-		direction: 'x',
-		length: null,
-		margin: { left: 40, right: 20, top: 20, bottom: 30 } // you only need to specify two of these dependending of the `direction`
+	"use strict";
+
+	// pseudo globals
+	let element, scale, axis, axis_g, label, original_width;
+
+	if (!container) {
+		console.log("You must supply slider a container as the first argument to d3slider.");
+		return null;
+	}
+
+	element = select(container).attr("class", "d3axis");
+
+	const margins = {
+		x: { left: 20, right: 20, top: 35, bottom: 30 },
+		y: { left: 45, right: 30, top: 20, bottom: 30 }
 	};
 
+	const settings = {
+		direction: null,
+		type: 'linear',
+		domain: [0, 1],
+		width: element.node().clientWidth,
+		height: element.node().clientHeight,
+		margin: null
+	};
 
+	// establish direction before setting default margin
+	settings.direction = myOpts.hasOwnProperty("direction") ? myOpts.direction : "x";
+	settings.direction = settings.direction.toLowerCase();
 
+	settings.margin = margins[settings.direction];
 
-	// careful deep clone
+	// manual deep clone
 	if (myOpts.hasOwnProperty("margin")) {
-		Object.assign(opts.margin, myOpts.margin);
+		Object.assign(settings.margin, myOpts.margin);
 		delete myOpts.margin;
 	}
 
-	dir = dir.toLowerCase();
-	axis_opts = axis_opts || {};
+	Object.assign(settings, myOpts);
 
-	// FILL IN OPTIONS
+	settings.width = settings.width - settings.margin.left - settings.margin.right;
+	settings.height = settings.height - settings.margin.top - settings.margin.bottom;
+	original_width = settings.width;
 
-	// range (pixels the axis will span)
-	axis_opts.range = axis_opts.range || (dir === "x" ? [0, width] : [height, 0]);
+	// SCALE 
+	if (settings.direction === 'x') {
+		settings.range = [ 0, settings.width ];
+	} else if (settings.direction === 'y') {
+		settings.range = [ settings.height, 0 ];
+	}
 
 	// output range (domain) of axis
-	axis_opts.domain = axis_opts.domain || [0, 1];
-
-	if (typeof axis_opts.min !== "undefined") {
-		axis_opts.domain[0] = axis_opts.min;	
-	}
-
-	if (typeof axis_opts.max !== "undefined") {
-		axis_opts.domain[1] = axis_opts.max;	
-	}
-
-	axis_opts.type = axis_opts.type || "linear";
-
-	axis_opts.orientation = axis_opts.orientation || (dir === "x"? "bottom" : "left");
+	settings.orientation = settings.orientation || (settings.direction === "x"? "bottom" : "left");
 
 	// if "rules" is true, this will be overridden
-	axis_opts.tickLength = axis_opts.hasOwnProperty("tickLength")? axis_opts.tickLength : 10;
-
+	if (settings.rules) {
+		settings.tickLength = settings.direction === "x" ? settings.height : settings.width;
+	} else {
+		settings.tickLength = settings.hasOwnProperty("tickLength")? settings.tickLength : 10;
+	}
 
 	// BUILD THE AXIS
 
 	// currently supported times are time, ordinal, log, or linear (default)
-	switch(axis_opts.type.toLowerCase()) {
+	switch(settings.type.toLowerCase()) {
+		case "linear": scale = scaleLinear(); break;
 		case "time": scale = scaleTime(); break;
 		case "ordinal": scale = scaleBand().padding(0.2); break;
-		case "log": scale = scaleLog(axis_opts.log_base || 2); break;
-		case "linear": scale = scaleLinear(); break;
+		case "log": scale = scaleLog(settings.log_base || 2); break;
 		default: scale = scaleLinear(); break;
 	}
 
 	// input range
-	if (axis_opts.type === "ordinal2") {
-		scale.rangeRoundBands(axis_opts.range, .5).domain(axis_opts.domain);
+	if (settings.type === "ordinal") {
+		scale.rangeRound(settings.range).domain(settings.domain);
 	} else {
-		scale.rangeRound(axis_opts.range).domain(axis_opts.domain);
+		scale.range(settings.range).domain(settings.domain);
 	}
 
-	if (dir == "x") {
-		if (axis_opts.orientation == "top") {
-			ax = axisTop().scale(scale);
+	if (settings.type == "log" && settings.hasOwnProperty("base")) {
+		scale.base(settings.base);
+	}
+
+	if (settings.direction === "x") {
+		if (settings.orientation === "top") {
+			axis = axisTop().scale(scale);
 		} else {
-			ax = axisBottom().scale(scale);
+			axis = axisBottom().scale(scale);
 		}
 	} else {
-		if (axis_opts.orientation == "right") {
-			ax = axisRight().scale(scale);
+		if (settings.orientation === "right") {
+			axis = axisRight().scale(scale);
 		} else {
-			ax = axisLeft().scale(scale);
+			axis = axisLeft().scale(scale);
 		}
 	}
 
-	axis_g = axes_layer.append("g").attr("class", dir + " axis");
+	axis_g = element.append("g").attr("class", settings.direction + " axis");
 
-	if (axis_opts.tickFormat) {
-		ax.tickFormat(axis_opts.tickFormat);
+	if (settings.id) {
+		axis_g.attr("id", settings.id);	
 	}
 
-	if (axis_opts.id) {
-		axis_g.attr("id", axis_opts.id);	
+	if (settings.tickFormat) {
+		axis.tickFormat(settings.tickFormat);
 	}
 
-	if (axis_opts.label) {
-		if (dir === "x") {
-			axis_opts.label_offset = axis_opts.hasOwnProperty('label_offset') ? axis_opts.label_offset : (axis_opts.orientation === "bottom" ? 30 : -20);
-			
-			var label = axis_g.append("text")
-				.attr("x", width / 2)
-				.attr("y", axis_opts.label_offset)
-				.style("text-anchor", "middle")
+	if (settings.ticks) {
+		axis.ticks(settings.ticks);
+	}
+
+	if (settings.tickValues) {
+		axis.tickValues(settings.tickValues);
+	}
+
+	if (settings.label) {
+		if (!settings.hasOwnProperty('label_offset')) {
+			switch(settings.orientation) {
+				case "left": settings.label_offset = -25; break;
+				case "right": settings.label_offset = 25; break;
+				case "top": settings.label_offset = -20; break;
+				case "bottom": settings.label_offset = 25; break;
+			}
+		}
+
+		if (settings.direction === "x") {			
+			label = axis_g.append("text")
+				.attr("x", settings.width / 2)
+				.attr("y", settings.label_offset)
 				.classed("axis_label", true)
-				.html(axis_opts.label);
+				.html(settings.label);
 		} else {
-			var label = axis_g.append("text")
+			label = axis_g.append("text")
 				.attr("transform", function(d){
-					return axis_opts.label_offset ? "translate("+ axis_opts.label_offset +","+ height/2 +")rotate(-90)" : "translate("+ -30 +","+ height/2 +")rotate(-90)";
+					return "translate(" + settings.label_offset +","+ settings.height / 2 +")rotate(-90)";
 				})
-				.style("text-anchor", "middle")
 				.classed("axis_label", true)
-				.html(axis_opts.label);
+				.html(settings.label);
 		}
 	}
-	axis_g.call(ax);
+	axis_g.call(axis);
+
+	// invoke this function any time you manually change an axis property, like tickFormat
+	const update_axis = function(dur) {
+		dur ? axis_g.transition().duration(dur).call(axis) : axis_g.call(axis);
+
+		// reposition labels
+		if (settings.label) {
+			if (settings.direction === "x") {
+				axis_g.select(".axis_label")
+					.attr("x", settings.width / 2)
+					.attr("y", settings.label_offset);
+			} else {
+				axis_g.select(".axis_label")
+					.attr("transform", function(d){
+						return "translate("+ settings.label_offset + ","+ settings.height / 2 +")rotate(-90)";
+					});
+			}
+		}
+	};
+
+	// this is invoked on load and any time the graph is modified or resized.
+	const draw_axis = function (w, h, z) {
+		settings.range = settings.direction === "x" ? [0, w] : [h, 0];
+
+		scale.range(settings.range).domain(settings.domain);		
+
+		if (settings.type === "ordinal") {
+			scale.rangeRound(settings.range).domain(settings.domain);
+		}
+
+		if (settings.direction === "x") {
+			/*
+			if (settings.hasOwnProperty("intercept") && axes.y) {
+				console.log(axes.y.scale(settings.intercept)), h;
+				axis_g.attr("transform", "translate(0," + axes.y.scale(settings.intercept) + ")");
+			} else if (settings.orientation == "bottom") {
+				axis_g.attr("transform", "translate(0," + h + ")");
+			}
+			*/
+
+			if (settings.orientation === "bottom") {
+				axis_g.attr("transform", `translate(${ settings.margin.left }, ${ settings.margin.top + settings.height })`);
+			} else {
+				axis_g.attr("transform", `translate(${ settings.margin.left }, ${ settings.margin.top })`);
+			}
+		} else if (settings.direction === "y") {
+			if (settings.orientation == "left") {
+				axis_g.attr("transform", `translate(${ settings.margin.left }, ${ settings.margin.top })`);
+			} else {
+				axis_g.attr("transform", `translate(${ settings.margin.left + settings.width }, ${ settings.margin.top })`);
+			}
+		}
+
+		if (settings.direction == "x") {
+			if (settings.rules) {
+				axis.tickSize(-settings.height, 0);
+			} else {
+				axis.tickSize(-settings.tickLength, 0);
+			}
+		} else {
+			if (settings.rules) {
+				axis.tickSize(-settings.width, 0);
+			} else {
+				axis.tickSize(-settings.tickLength, 0);
+			}					
+		}
+
+		// optional resize function passed to axis options
+		if (settings.onResize) {
+			settings.onResize(scale, axis_g, settings.width, settings.height, z);
+		}
+
+		update_axis();
+	}
+
+	const resize_axis = function() {
+		settings.width = element.node().clientWidth - settings.margin.left - settings.margin.right;
+		settings.height = element.node().clientHeight - settings.margin.top - settings.margin.bottom;
+
+		let z = settings.width / original_width;
+
+		if (settings.width != original_width) {
+			draw_axis(settings.width, settings.height, z);
+		}
+
+		if (settings.width > original_width) {
+			original_width = settings.width;
+		}
+	}
+
+
+	// this is invoke onload and any time the chart is resized
+	draw_axis(settings.width, settings.height, 1);
+
+	// we'll return this object (and store it in the chart object)
+	let obj = {
+		settings: settings,
+		// original_width: original_width,
+		scale: scale,
+		axis: axis,
+		update: update_axis,
+		redraw: draw_axis,
+		resize: resize_axis,
+		setDomain: function(new_domain, duration) {
+			settings.domain = new_domain;
+			scale.range(settings.range).domain(settings.domain);
+			update_axis(duration);
+		}
+	};
+
+	return obj;
 }
 
-// invoke this function any time you manually change an axis property, like tickFormat
-let update_axis = function(dur) {
-	dur ? axis_g.transition().duration(dur).call(ax) : axis_g.call(ax);
-
-	// reposition labels
-	if (axis_opts.label) {
-		if (dir === "x") {
-			axis_g.select(".axis_label")
-				.attr("x", width / 2)
-				.attr("y", axis_opts.label_offset ? axis_opts.label_offset : 30);
-		} else {
-			axis_g.select(".axis_label")
-				.attr("transform", function(d){
-					return  axis_opts.label_offset ? "translate("+ axis_opts.label_offset +","+ height/2 +")rotate(-90)" : "translate("+ -30 +","+ height/2 +")rotate(-90)";
-				});
-		}
-
-	}
-};
-
-// this is invoked on load and any time the graph is modified or resized. See "Philosophy" section of the README
-let draw_axis = function (w, h, z) {
-	axis_opts.range = dir === "x" ? [0, w] : [h, 0];
-
-	if (axis_opts.type === "ordinal2") {
-		scale.rangeRoundBands(axis_opts.range, .5).domain(axis_opts.domain);
-	} else {
-		scale.range(axis_opts.range).domain(axis_opts.domain);
-	}
-
-	if (dir == "x" && axis_opts.orientation == "bottom") {
-		axis_g.attr("transform", "translate(0," + h + ")");
-		/*
-		if (axis_opts.hasOwnProperty("intercept") && axes.y) {
-			console.log(axes.y.scale(axis_opts.intercept)), h;
-			axis_g.attr("transform", "translate(0," + axes.y.scale(axis_opts.intercept) + ")");
-		} else if (axis_opts.orientation == "bottom") {
-			axis_g.attr("transform", "translate(0," + h + ")");
-		}
-		*/
-	} else if (dir == "y" && axis_opts.orientation == "right") {
-		axis_g.attr("transform", "translate(" + w + ",0)");
-	}
-
-	if (dir == "x") {
-		if (axis_opts.rules) {
-			ax.tickSize(-height, 0);
-		} else {
-			ax.tickSize(-axis_opts.tickLength, 0);
-		}
-	} else {
-		if (axis_opts.rules) {
-			ax.tickSize(-width, 0);
-		} else {
-			ax.tickSize(-axis_opts.tickLength, 0);
-		}					
-	}
-
-	// optional resize function passed to axis options
-	if (axis_opts.onResize) {
-		axis_opts.onResize(scale, axis_g, width, height, z);
-	}
-
-	update_axis();
-}
+export default d3axis

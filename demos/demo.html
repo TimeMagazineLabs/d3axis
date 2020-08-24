@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+	<head>
+		<title>D3 Slider Demo</title>
+		<style>
+body {
+	max-width: 750px;
+	font-family: Arial, serif;
+}
+
+svg {
+	border: 1px solid #CCC;
+	display: inline-block;
+	width: 100%;
+}
+
+#xScaleTop line, #xScaleTop path {
+	stroke: green;
+}
+
+#xScaleTop .tick text {
+	fill: red;
+}
+
+#svg_demo_1 {
+	max-width: 60%;
+}
+
+#svg_demo_2 {
+	max-width: 38%;
+}
+
+#svg_demo_3 {
+	max-width: 25%;
+}
+
+#svg_demo_4 {
+	max-width: 73%;
+}
+
+
+		</style>
+	</head>
+	<body>
+		<svg id="svg_demo_1" height="200"></svg>
+		<svg id="svg_demo_2" height="200"></svg>
+		<svg id="svg_demo_3" height="400"></svg>
+		<svg id="svg_demo_4" height="400"></svg>
+
+		<script src="../dist/d3axis.js"></script>
+		<script>
+
+const formatDate = function(date) {
+	const months = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.',	'Nov.', 'Dec.'];
+	return months[date.getMonth()] + ' ' + date.getDate();
+};
+
+// some data we'll need
+let today = new Date();
+let startDate = new Date(today.getFullYear(), 0, 1);
+
+let letters = "TIME LABS".split('').reverse();
+
+let xScaleBottom = d3axis("#svg_demo_1", {
+	id: "xScaleBottom",
+	domain: [0, 50],
+	label: "linear scale transitioning from 50 to 100",
+	tickLength: 30
+});
+
+xScaleBottom.setDomain([0, 100], 2500);
+
+/* 
+this is identical to:
+	xScaleBottom.scale.domain([0, 100]);
+	xScaleBottom.update(2000);
+*/
+
+let xScaleTop = d3axis("#svg_demo_2", {
+	id: "xScaleTop",	
+	type: "time",
+	orientation: "top",
+	domain: [ startDate, today ],
+	label: "Dates with `tickFormat` and `ticks`",
+	rules: true,
+	ticks: 4,
+	tickFormat: function(d) {
+		return formatDate(d);
+	}	
+});
+
+let yScaleLeft = d3axis("#svg_demo_3", {
+	id: "yScaleLeft",
+	type: "log",
+	direction: "y",
+	domain: [ 2, 32 ],
+	base: 2,
+	label: "log scale from 2 to 32",
+	rules: true,
+	tickFormat: function(d) {
+		return '2^' + Math.log(d) / Math.log(2);
+	}
+});
+
+let yScaleRight = d3axis("#svg_demo_4", {
+	id: "yScaleRight",
+	direction: "y",
+	orientation: "right",
+	type: "ordinal",
+	domain: letters,
+	label: "ordinal scale",
+	tickLength: -5
+});
+
+window.onresize = function() {
+	xScaleBottom.resize();
+	xScaleTop.resize();
+	yScaleLeft.resize();
+	yScaleRight.resize();
+};
+		</script>
+	</body>
+</html>
