@@ -27,8 +27,8 @@ function d3axis(container, myOpts) {
 		direction: null,
 		type: 'linear',
 		domain: [0, 1],
-		width: element.node().clientWidth,
-		height: element.node().clientHeight,
+		full_width: element.node().clientWidth,
+		full_height: element.node().clientHeight,
 		margin: null
 	};
 
@@ -46,9 +46,10 @@ function d3axis(container, myOpts) {
 
 	Object.assign(settings, myOpts);
 
-	settings.width = settings.width - settings.margin.left - settings.margin.right;
-	settings.height = settings.height - settings.margin.top - settings.margin.bottom;
-	original_width = settings.width;
+	original_width = settings.full_width;
+
+	settings.width = settings.full_width - settings.margin.left - settings.margin.right;
+	settings.height = settings.full_height - settings.margin.top - settings.margin.bottom;
 
 	// SCALE 
 	if (settings.direction === 'x') {
@@ -168,8 +169,10 @@ function d3axis(container, myOpts) {
 	};
 
 	// this is invoked on load and any time the graph is modified or resized.
-	const draw_axis = function (w, h, z) {
-		settings.range = settings.direction === "x" ? [0, w] : [h, 0];
+	const draw_axis = function (w, h) {
+		settings.width = w - settings.margin.left - settings.margin.right;
+		settings.height = h - settings.margin.top - settings.margin.bottom;
+		settings.range = settings.direction === "x" ? [0, settings.width] : [settings.height, 0];
 
 		scale.range(settings.range).domain(settings.domain);		
 
@@ -223,13 +226,12 @@ function d3axis(container, myOpts) {
 	}
 
 	const resize_axis = function() {
-		settings.width = element.node().clientWidth - settings.margin.left - settings.margin.right;
-		settings.height = element.node().clientHeight - settings.margin.top - settings.margin.bottom;
-
+		let w = element.node().clientWidth; // - settings.margin.left - settings.margin.right;
+		let h = element.node().clientHeight; // - settings.margin.top - settings.margin.bottom;
 		let z = settings.width / original_width;
 
-		if (settings.width != original_width) {
-			draw_axis(settings.width, settings.height, z);
+		if (w != settings.full_width) {
+			draw_axis(w, h);
 		}
 
 		if (settings.width > original_width) {
@@ -237,9 +239,8 @@ function d3axis(container, myOpts) {
 		}
 	}
 
-
 	// this is invoke onload and any time the chart is resized
-	draw_axis(settings.width, settings.height, 1);
+	draw_axis(settings.full_width, settings.full_height, 1);
 
 	// we'll return this object (and store it in the chart object)
 	let obj = {
