@@ -1,6 +1,6 @@
 {
   "name": "d3axis",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A basic wrapper for d3-scale and d3-axis, mainly used as a dependency for our chart and slider",
   "main": "axis.js",
   "scripts": {
