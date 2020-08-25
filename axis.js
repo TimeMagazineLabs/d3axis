@@ -244,6 +244,7 @@ function d3axis(container, myOpts) {
 
 	// we'll return this object (and store it in the chart object)
 	let obj = {
+		element: axis_g,
 		settings: settings,
 		// original_width: original_width,
 		scale: scale,
