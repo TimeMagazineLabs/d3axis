@@ -230,13 +230,7 @@ function d3axis(container, myOpts) {
 		let h = element.node().clientHeight; // - settings.margin.top - settings.margin.bottom;
 		let z = settings.width / original_width;
 
-		if (w != settings.full_width) {
-			draw_axis(w, h);
-		}
-
-		if (settings.width > original_width) {
-			original_width = settings.width;
-		}
+		draw_axis(w, h);
 	}
 
 	// this is invoke onload and any time the chart is resized
