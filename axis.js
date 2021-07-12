@@ -151,6 +151,7 @@ function d3axis(container, myOpts) {
 
 	// invoke this function any time you manually change an axis property, like tickFormat
 	const update_axis = function(dur) {
+
 		dur ? axis_g.transition().duration(dur).call(axis) : axis_g.call(axis);
 
 		// reposition labels
